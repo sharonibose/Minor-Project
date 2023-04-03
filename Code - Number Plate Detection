@@ -1,0 +1,39 @@
+import cv2
+import easyocr
+
+# Load the image
+img = cv2.imread('car_image.jpg')
+
+# Convert the image to grayscale
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# Apply a blur filter to reduce noise
+blur = cv2.GaussianBlur(gray, (5, 5), 0)
+
+# Apply a canny edge detection algorithm to find edges
+edges = cv2.Canny(blur, 50, 150)
+
+# Find contours in the edges image
+contours, hierarchy = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+# Iterate through the contours to find the number plate
+for contour in contours:
+    area = cv2.contourArea(contour)
+    if area > 1000:
+        x, y, w, h = cv2.boundingRect(contour)
+        roi = img[y:y+h, x:x+w]
+        
+        # Use EasyOCR to recognize text in the region of interest
+        reader = easyocr.Reader(['en'])
+        result = reader.readtext(roi)
+        for r in result:
+            text = r[1]
+            print('Detected Number Plate:', text)
+            cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            cv2.putText(img, text, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            break
+
+# Display the image with the number plate highlighted
+cv2.imshow('Number Plate Detection', img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
